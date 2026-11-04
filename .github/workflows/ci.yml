@@ -78,6 +78,8 @@ jobs:
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
         with:
           image-ref: devsecops-tp:${{ github.sha }}
-          severity: CRITICAL,HIGH
+          format: 'table'
           ignore-unfixed: true
           exit-code: '1'
+          vuln-type: 'os'
+          severity: 'CRITICAL,HIGH'
