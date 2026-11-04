@@ -74,7 +74,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Scan Trivy (Action épinglée par SHA)
-        uses: aquasec/trivy-action@516f4618a5fd445a66699d7d4ee7e37172ef2a9f
+        uses: aquasec/trivy-action@mLmUjEEQEvyKXbyh9I+hBOEzlOsTE096kFfqRhGA8Wo=
         with:
           image-ref: 'devsecops-tp:latest'
           format: 'table'
