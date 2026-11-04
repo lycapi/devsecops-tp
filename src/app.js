@@ -1,5 +1,6 @@
 const express = require('express');
 const { execFile } = require('child_process');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -13,6 +14,15 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Limiteur de débit pour les routes sensibles (désactivé pendant les tests automatisés)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limite à 100 requêtes par IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Route /hello sécurisée
@@ -21,10 +31,12 @@ app.get('/hello', (req, res) => {
   res.send(`<h1>Bonjour ${escapeHtml(name)}</h1>`);
 });
 
-// Route /ping sécurisée
-app.get('/ping', (req, res) => {
+// Route /ping sécurisée avec Rate Limiting et protection ReDoS/Injection
+app.get('/ping', limiter, (req, res) => {
   const host = req.query.host;
-  const hostRegex = /^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9]))*$/;
+
+  // Expression régulière stricte et ancrée (^ et $) pour éviter le ReDoS et les injections
+  const hostRegex = /^[a-zA-Z0-9.-]+$/;
 
   if (!host || !hostRegex.test(host)) {
     return res.status(400).send('Hôte invalide');
@@ -37,7 +49,7 @@ app.get('/ping', (req, res) => {
   });
 });
 
-// Route /prefs sécurisée
+// Route /prefs sécurisée contre la pollution de prototype
 app.get('/prefs', (req, res) => {
   const defaults = { theme: 'light', lang: 'fr' };
   const allowedKeys = ['theme', 'lang'];
