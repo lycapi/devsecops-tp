@@ -53,3 +53,33 @@ jobs:
 
       - name: Audit de sécurité des dépendances
         run: npm audit --audit-level=high
+  
+  image:
+    needs: [test, deps-audit]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Configuration de Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build de l'image Docker avec cache GitHub
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: devsecops-tp:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan Trivy (Action épinglée par SHA)
+        uses: aquasec/trivy-action@516f4618a5fd445a66699d7d4ee7e37172ef2a9f
+        with:
+          image-ref: 'devsecops-tp:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+        
